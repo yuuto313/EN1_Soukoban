@@ -16,6 +16,7 @@ public class NewBehaviourScript : MonoBehaviour
         Debug.Log(debugText);
     }
 
+    //
     int GetPlayerIndex()
     {
         for(int i = 0; i < map.Length; i++)
@@ -42,6 +43,22 @@ public class NewBehaviourScript : MonoBehaviour
             //動けない条件を先に書き、早期リターンする
             return false;
         }
+
+        if (map[moveTo] == 2)
+        {
+            //どの方向へ移動するかを算出
+            int velocity = moveTo - moveFrom;
+            //プレイヤーの移動先から、さらに先へ２（箱）を移動させる
+            //箱の移動処理。MoveNumberメソッド内でMoveNumberメソッドを呼び処理が再起している。移動不可をBoolで記録
+            bool success = MoveNumber(2, moveTo, moveTo + velocity);
+            //もし箱が移動失敗したら、プレイヤーの移動も失敗
+            if (!success)
+            {
+                return false;
+            }
+            
+        }
+        //プレイヤー・箱関わらずの移動処理
         map[moveTo] = number;
         map[moveFrom] = 0;
         return true;
@@ -56,7 +73,7 @@ public class NewBehaviourScript : MonoBehaviour
     void Start()
     {  
         //１をプレイヤー、２を箱とする
-        map = new int[] { 0, 0, 0, 1, 0, 2, 0, 0, 0 };
+        map = new int[] { 0, 0, 0, 1, 0, 2, 2, 0, 0 };
         PrintArray();
     }
 
@@ -75,6 +92,7 @@ public class NewBehaviourScript : MonoBehaviour
                     break;
                 }
             }
+            //移動処理を関数化
             MoveNumber(1, playerIndex, playerIndex + 1);
 
             PrintArray();
