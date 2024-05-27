@@ -26,7 +26,10 @@ public class Particle : MonoBehaviour
         float maxVelocity = 5.0f;
         //各方向へランダムで飛ばす
         //Range（返す乱数の最小値、返す乱数の最大値）
-        velocity = new Vector3(Random.Range(-maxVelocity, maxVelocity), Random.Range(-maxVelocity, maxVelocity), 0);
+        velocity = new Vector3(
+            Random.Range(-maxVelocity, maxVelocity),
+            Random.Range(-maxVelocity, maxVelocity),
+            0);
     }
 
     // Update is called once per frame
@@ -37,7 +40,11 @@ public class Particle : MonoBehaviour
         //自身の座標を移動
         transform.position += velocity * Time.deltaTime;
         //残り時間により徐々にScaleを小さくする
-        transform.localScale = Vector3.Lerp(new Vector3(0, 0, 0), defaultScale, leftLifeTime / lifeTime);
+        transform.localScale = Vector3.Lerp
+            (new Vector3(0, 0, 0),
+            defaultScale,
+            leftLifeTime / lifeTime
+            );
         //残り時間が０以下になったら自身のゲームオブジェクトを消滅
         if (leftLifeTime <= 0)
         {

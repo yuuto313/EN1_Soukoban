@@ -9,7 +9,12 @@ public class NewGameManagerScript : MonoBehaviour
     public GameObject playerPrefab;
     public GameObject boxPrefab;
     public GameObject clearText;
+    public GameObject resetText;
     public GameObject particlePrefab;
+    public GameObject goalPrefab;
+    public GameObject clearParticlePrefab;
+    public GameObject fieldPrefab;
+    public GameObject wallPrefab;
 
     //レベルデザイン用の配列
     int[,] map;
@@ -57,6 +62,11 @@ public class NewGameManagerScript : MonoBehaviour
         {
             return false;
         }
+        
+        if (field[moveTo.y, moveTo.x] != null && field[moveTo.y, moveTo.x].tag == "Wall")
+        {
+            return false; 
+        }
 
         //2を動かす処理
         if (field[moveTo.y, moveTo.x] != null && field[moveTo.y, moveTo.x].tag == "Box")
@@ -67,12 +77,14 @@ public class NewGameManagerScript : MonoBehaviour
             bool success = MoveNumber("Box", moveTo, moveTo + velocity);
             if (!success) { return false; }
         }
+        
+        
+
 
 
         //プレイヤー・箱関わらずの移動処理
         //GameObjectの座標（Position）を移動させてからインデックスの入れ替え
-        //field[moveFrom.y, moveFrom.x].transform.position = new Vector3(x, map.GetLength(0) - y, 0);
-        Vector3 moveToPosition = new Vector3(moveTo.x, map.GetLength(0) - moveTo.y, 0);
+        Vector3 moveToPosition = IndexPosition(moveTo);
         field[moveFrom.y,moveFrom.x].GetComponent<Move>().MoveTo(moveToPosition);
         field[moveTo.y, moveTo.x] = field[moveFrom.y, moveFrom.x];
         field[moveFrom.y, moveFrom.x] = null;
@@ -84,7 +96,7 @@ public class NewGameManagerScript : MonoBehaviour
 
     Vector3 IndexPosition(Vector2Int index)
     {
-        return new Vector3(index.x - map.GetLength(1) / 2 + 0.5f, index.y - map.GetLength(0) / 2, 0);
+        return new Vector3(-(map.GetLength(1) / 2 - index.x), -(map.GetLength(0) / 2 - index.y), 0);
     }
     /// <summary>
     /// クリア判定
@@ -119,6 +131,43 @@ public class NewGameManagerScript : MonoBehaviour
         //条件未達成でなければ条件達成
         return true;
     }
+    /// <summary>
+    /// プレイヤーの移動用のパーティクル
+    /// </summary>
+    /// <param name="playerIndex"></param>
+    void CleatePlayerParticle(Vector2Int playerIndex)
+    {
+        //パーティクルを生成する
+        for (int i = 0; i < 7; i++)
+        {
+            Instantiate(particlePrefab,
+            IndexPosition(playerIndex),
+            Quaternion.identity
+            );
+        }
+    }
+
+    void Reset()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            // フィールド上のオブジェクトを破棄
+            for (int y = 0; y < map.GetLength(0); y++)
+            {
+                for (int x = 0; x < map.GetLength(1); x++)
+                {
+                    if (field[y, x] != null)
+                    {
+                        Destroy(field[y, x]);
+                    }
+                }
+            }
+
+            // フィールドの初期化
+            Start();
+            clearText.SetActive(false);
+        }
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -126,14 +175,17 @@ public class NewGameManagerScript : MonoBehaviour
         //解像度とウィドウモード設定
         Screen.SetResolution(1280, 720, false);
 
-
-        //１をプレイヤー、２を箱とする
+        //１をプレイヤー、２を箱、３をゴールとする
         map = new int[,] {
-           { 0, 0, 0, 0, 0 },
-           { 0, 3, 1, 3, 0 },
-           { 0, 0, 2, 0, 0,},
-           { 0, 2, 3, 2, 0,},
-           { 0, 0, 0, 0, 0,},
+            {4,4,4,4,4,4,4,4,4,4,4,4},
+            {4,0,0,0,0,0,0,0,0,0,0,4},
+            {4,0,0,3,0,0,0,0,3,0,0,4},
+            {4,0,4,4,0,0,0,0,4,4,0,4},
+            {4,0,0,0,0,0,1,0,0,0,0,4},
+            {4,0,0,0,0,0,0,0,0,0,0,4},
+            {4,0,2,0,0,0,0,0,0,2,0,4},
+            {4,0,0,0,0,0,0,0,0,0,0,4},
+            {4,4,4,4,4,4,4,4,4,4,4,4},
         };
 
         field = new GameObject
@@ -157,9 +209,9 @@ public class NewGameManagerScript : MonoBehaviour
                 {
                     field[y, x] = Instantiate(
                         playerPrefab,
-                        new Vector3(x, map.GetLength(0) - y, 0),
-                        Quaternion.identity);//パーティクルを生成する
-                   
+                        IndexPosition(new Vector2Int(x,y)),
+                        Quaternion.identity
+                        );                  
                 };
 
                 //box生成
@@ -167,16 +219,37 @@ public class NewGameManagerScript : MonoBehaviour
                 {
                     field[y, x] = Instantiate(
                         boxPrefab,
-                        new Vector3(x, map.GetLength(0) - y, 0),
-                        Quaternion.identity);
+                        IndexPosition(new Vector2Int(x, y)),
+                        Quaternion.identity
+                        );
+                }
+
+                //ゴール生成
+                if (map[y, x] == 3)
+                {
+                    Instantiate(
+                        goalPrefab,
+                        IndexPosition(new Vector2Int(x, y)),
+                        Quaternion.identity
+                        );
+                
+                }
+
+                //壁生成
+                if (map[y, x] == 4)
+                {
+                    field[y,x] = Instantiate(
+                        wallPrefab,
+                        IndexPosition(new Vector2Int(x, y)),
+                        Quaternion.identity
+                        );
+
                 }
 
             }
             //改行
             debugText += "\n";
         }
-
-        
 
         Debug.Log(debugText);
     }
@@ -185,6 +258,9 @@ public class NewGameManagerScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        Reset();
+        resetText.SetActive(true);
+
         //右キーを押した瞬間
         //Vector2Int playerIndex = GetPlayerIndex();
         if (Input.GetKeyDown(KeyCode.RightArrow))
@@ -193,10 +269,15 @@ public class NewGameManagerScript : MonoBehaviour
 
             //移動処理を関数化
             MoveNumber("Player", playerIndex, playerIndex + new Vector2Int(1, 0));
+
+            //パーティクルを生成する
+            CleatePlayerParticle(playerIndex);
+            //クリア判定
             if (IsCleard())
             {
                 Debug.Log("Clear");
                 clearText.SetActive(true);
+       
             }
         }
 
@@ -207,11 +288,17 @@ public class NewGameManagerScript : MonoBehaviour
             Vector2Int playerIndex = GetPlayerIndex();
 
             MoveNumber("Player", playerIndex, playerIndex + new Vector2Int(-1, 0));
+
+            //パーティクルを生成する
+            CleatePlayerParticle(playerIndex);
+            //クリア判定
             if (IsCleard())
             {
                 Debug.Log("Clear");
                 clearText.SetActive(true);
+               
             }
+
         }
 
         //上キーを押した瞬間
@@ -220,12 +307,18 @@ public class NewGameManagerScript : MonoBehaviour
         {
             Vector2Int playerIndex = GetPlayerIndex();
 
-            MoveNumber("Player", playerIndex, playerIndex + new Vector2Int(0, -1));
+            MoveNumber("Player", playerIndex, playerIndex + new Vector2Int(0, 1));
+
+            //パーティクルを生成する
+            CleatePlayerParticle(playerIndex);
+            //クリア判定
             if (IsCleard())
             {
                 Debug.Log("Clear");
                 clearText.SetActive(true);
+               
             }
+
         }
 
         //下キーを押した瞬間
@@ -234,12 +327,18 @@ public class NewGameManagerScript : MonoBehaviour
         {
             Vector2Int playerIndex = GetPlayerIndex();
 
-            MoveNumber("Player", playerIndex, playerIndex + new Vector2Int(0, 1));
+            MoveNumber("Player", playerIndex, playerIndex + new Vector2Int(0, -1));
+
+            //パーティクルを生成する
+            CleatePlayerParticle(playerIndex);
+            //クリア判定
             if (IsCleard())
             {
                 Debug.Log("Clear");
                 clearText.SetActive(true);
+              
             }
+
         }
     }
 }
